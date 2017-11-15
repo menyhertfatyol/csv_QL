@@ -6,22 +6,33 @@ import (
 	"io"
 	"log"
 	"os"
+	"regexp"
 )
 
-func main() {
-	csvFile, err := os.Open("test.csv")
-	if err != nil {
-		log.Fatal(err)
+func check(e error) {
+	if e != nil {
+		log.Fatal(e)
 	}
-	r := csv.NewReader(csvFile)
+}
+
+func main() {
+	myRegex := "hello"
+	regexToFind, err := regexp.Compile(myRegex)
+	check(err)
+	csvFile, err := os.Open("test.csv")
+	check(err)
+	readMyCsv := csv.NewReader(csvFile)
 	for {
-		record, err := r.Read()
+		record, err := readMyCsv.Read()
 		if err == io.EOF {
 			break
 		}
 		if err != nil {
 			log.Fatal(err)
 		}
-		fmt.Println(record)
+		if regexToFind.MatchString(record[0]) {
+			fmt.Println(record)
+		}
+
 	}
 }
