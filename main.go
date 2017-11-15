@@ -8,15 +8,11 @@ import (
 	"os"
 )
 
-func check(e error) {
-	if e != nil {
-		log.Fatal(e)
-	}
-}
-
 func main() {
 	csvFile, err := os.Open("test.csv")
-	check(err)
+	if err != nil {
+		log.Fatal(err)
+	}
 	r := csv.NewReader(csvFile)
 	for {
 		record, err := r.Read()
