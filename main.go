@@ -7,6 +7,8 @@ import (
 	"log"
 	"os"
 	"regexp"
+	"strconv"
+	"strings"
 )
 
 func check(e error) {
@@ -16,10 +18,27 @@ func check(e error) {
 }
 
 func main() {
-	myRegex := "hello"
+	argsWithoutProg := os.Args[1:]
+	argumentRegex, err := regexp.Compile("[1-9]+:[a-z\"]*")
+	check(err)
+
+	var colNum int
+	myRegex := ""
+	myFilename := ""
+
+	for i := 0; i <= 1; i++ {
+		if argumentRegex.MatchString(argsWithoutProg[i]) {
+			colNum, err = strconv.Atoi(strings.Split(argsWithoutProg[i], ":")[0])
+			check(err)
+			myRegex = strings.Split(argsWithoutProg[i], ":")[1]
+		} else {
+			myFilename = argsWithoutProg[i]
+		}
+	}
+
 	regexToFind, err := regexp.Compile(myRegex)
 	check(err)
-	csvFile, err := os.Open("test.csv")
+	csvFile, err := os.Open(myFilename)
 	check(err)
 	readMyCsv := csv.NewReader(csvFile)
 	for {
@@ -30,7 +49,7 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		if regexToFind.MatchString(record[0]) {
+		if regexToFind.MatchString(record[colNum-1]) {
 			fmt.Println(record)
 		}
 
