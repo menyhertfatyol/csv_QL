@@ -26,7 +26,11 @@ func main() {
 	myRegex := ""
 	myFilename := ""
 
-	for i := 0; i <= 1; i++ {
+	if len(argsWithoutProg) < 2 {
+		fmt.Println("You have to provide 2 arguments. A filename and column number followed by a regex, like 1:\"hello\"")
+		os.Exit(1)
+	}
+	for i := 0; i < len(argsWithoutProg); i++ {
 		if argumentRegex.MatchString(argsWithoutProg[i]) {
 			colNum, err = strconv.Atoi(strings.Split(argsWithoutProg[i], ":")[0])
 			check(err)
