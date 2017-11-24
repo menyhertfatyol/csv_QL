@@ -2,7 +2,7 @@ package main
 
 import (
 	"encoding/csv"
-	"fmt"
+	"errors"
 	"io"
 	"log"
 	"os"
@@ -11,51 +11,85 @@ import (
 	"strings"
 )
 
-func check(e error) {
-	if e != nil {
-		log.Fatal(e)
-	}
-}
-
 func main() {
-	argsWithoutProg := os.Args[1:]
-	argumentRegex, err := regexp.Compile("[1-9]+:[a-z\"]*")
-	check(err)
+	filePaths := []string{}
+	patterns := []Pattern{}
 
-	var colNum int
-	myRegex := ""
-	myFilename := ""
-
-	if len(argsWithoutProg) < 2 {
-		fmt.Println("You have to provide 2 arguments. A filename and column number followed by a regex, like 1:\"hello\"")
-		os.Exit(1)
-	}
-	for i := 0; i < len(argsWithoutProg); i++ {
-		if argumentRegex.MatchString(argsWithoutProg[i]) {
-			colNum, err = strconv.Atoi(strings.Split(argsWithoutProg[i], ":")[0])
-			check(err)
-			myRegex = strings.Split(argsWithoutProg[i], ":")[1]
+	for _, arg := range os.Args[1:] {
+		if isExists(arg) {
+			filePaths = append(filePaths, arg)
 		} else {
-			myFilename = argsWithoutProg[i]
+			pattern, err := newPattern(arg)
+			if err != nil {
+				log.Fatal("The following pattern is invalid " + arg + "\n" + err.Error())
+			}
+			patterns = append(patterns, pattern)
 		}
 	}
 
-	regexToFind, err := regexp.Compile(myRegex)
-	check(err)
-	csvFile, err := os.Open(myFilename)
-	check(err)
-	readMyCsv := csv.NewReader(csvFile)
-	for {
-		record, err := readMyCsv.Read()
-		if err == io.EOF {
-			break
-		}
+	for _, path := range filePaths {
+		file, err := os.Open(path)
 		if err != nil {
 			log.Fatal(err)
 		}
-		if regexToFind.MatchString(record[colNum-1]) {
-			fmt.Println(record)
+
+		if err := filterCSVFile(file, patterns); err != nil {
+			log.Fatal(err)
+		}
+	}
+}
+
+func filterCSVFile(file *os.File, patterns []Pattern) error {
+	readMyCsv := csv.NewReader(file)
+	writer := csv.NewWriter(os.Stdout)
+	defer writer.Flush()
+
+	for {
+		record, err := readMyCsv.Read()
+
+		if err == io.EOF {
+			break
 		}
 
+		if err != nil {
+			return err
+		}
+
+		for _, pattern := range patterns {
+			if pattern.Expression.MatchString(record[pattern.ColumnNumber-1]) {
+				writer.Write(record)
+				break
+			}
+		}
 	}
+
+	return nil
+}
+
+func isExists(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil
+}
+
+// Pattern ...
+type Pattern struct {
+	ColumnNumber int
+	Expression   *regexp.Regexp
+}
+
+func newPattern(s string) (Pattern, error) {
+	format := regexp.MustCompile("[1-9]+:.*")
+	if !format.MatchString(s) {
+		return Pattern{}, errors.New("Invalid pattern format")
+	}
+	parts := strings.SplitN(s, ":", 2)
+	columnNumber, err := strconv.Atoi(parts[0])
+	if err != nil {
+		return Pattern{}, errors.New("Column number must be an integer: " + parts[0])
+	}
+	expression, err := regexp.Compile(regexp.QuoteMeta(parts[1]))
+	if err != nil {
+		return Pattern{}, err
+	}
+	return Pattern{ColumnNumber: columnNumber, Expression: expression}, nil
 }

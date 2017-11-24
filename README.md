@@ -28,3 +28,8 @@ Bonus:
 2. Add multiple conditions as argument
 3. If no csv arguments given, use the Stdin
 4. Able to process bigger file than the current computer's memory
+
+-----
+Why is it good/bad when data dominating
+Why is null object pattern useful
+Can I optimise this code even more

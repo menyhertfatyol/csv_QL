@@ -1,0 +1,62 @@
+package main
+
+import (
+	"encoding/csv"
+	"fmt"
+	"io"
+	"log"
+	"os"
+	"regexp"
+	"strconv"
+	"strings"
+)
+
+func check(e error) {
+	if e != nil {
+		log.Fatal(e)
+	}
+}
+
+func main() {
+	argsWithoutProg := os.Args[1:]
+	argumentRegex, err := regexp.Compile("[1-9]+:[a-z\"]*")
+	check(err)
+
+	var colNum int
+	myRegex := ""
+	myFilename := ""
+
+	if len(argsWithoutProg) < 2 {
+		fmt.Println("You have to provide 2 arguments. A filename and column number followed by a regex, like 1:\"hello\"")
+		os.Exit(1)
+	}
+	for i := 0; i < len(argsWithoutProg); i++ {
+		if argumentRegex.MatchString(argsWithoutProg[i]) {
+			colNum, err = strconv.Atoi(strings.Split(argsWithoutProg[i], ":")[0])
+			check(err)
+			myRegex = strings.Split(argsWithoutProg[i], ":")[1]
+		} else {
+			myFilename = argsWithoutProg[i]
+		}
+	}
+
+	regexToFind, err := regexp.Compile(myRegex)
+	check(err)
+	csvFile, err := os.Open(myFilename)
+	check(err)
+	readMyCsv := csv.NewReader(csvFile)
+	for {
+		record, err := readMyCsv.Read()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			log.Fatal(err)
+		}
+		if regexToFind.MatchString(record[colNum-1]) {
+
+			fmt.Println(record)
+		}
+
+	}
+}
