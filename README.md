@@ -33,3 +33,5 @@ Bonus:
 Why is it good/bad when data dominating
 Why is null object pattern useful
 Can I optimise this code even more
+net/http package explore.
+create new program to find matching lines on specific url, return the number of appearances
